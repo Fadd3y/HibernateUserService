@@ -2,13 +2,12 @@ package ru.practice;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ru.practice.dao.UserDAO;
 import ru.practice.models.User;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * Hello world!
@@ -18,11 +17,15 @@ public class App {
     private static UserDAO userDAO;
     private static Scanner scanner;
 
+    private static final Logger logger = LoggerFactory.getLogger(App.class);
+
     public static void main(String[] args) {
         scanner = new Scanner(System.in);
 
         Configuration configuration = new Configuration()
                 .addAnnotatedClass(User.class);
+
+        logger.info("User service started");
 
         try (SessionFactory sessionFactory = configuration.buildSessionFactory()) {
             userDAO = new UserDAO(sessionFactory);
@@ -31,58 +34,114 @@ public class App {
             String line;
 
             while(!isExit){
-                System.out.println("\nChoose option: \n1. create user \n2. show user \n3. update user \n4. delete user \n5. exit");
+                System.out.println("\n" +
+                        "User service. Choose option: \n" +
+                        "1. create user \n" +
+                        "2. show user \n" +
+                        "3. show all users \n" +
+                        "4. update user \n" +
+                        "5. delete user \n" +
+                        "6. exit");
+
                 line = scanner.nextLine();
+
+                logger.debug("Main menu option: {} (1-save, 2-show user, 3-show all, 4-update user, 5-delete user, 6-exit)", line);
 
                 switch (line) {
                     case "1" -> createUser();
                     case "2" -> readUser();
-                    case "3" -> updateUser();
-                    case "4" -> deleteUser();
-                    case "5" -> isExit = true;
-                    default -> System.out.println("Error: Unsupported command");
+                    case "3" -> readAllUsers();
+                    case "4" -> updateUser();
+                    case "5" -> deleteUser();
+                    case "6" -> isExit = true;
+                    default -> logger.warn("Unsupported command");
                 }
             }
         }
     }
 
     private static void createUser() {
+        logger.info("Creating user");
+
         System.out.println("Enter name:");
         String name = scanner.nextLine();
 
         System.out.println("Enter email:");
         String email = scanner.nextLine();
 
-        Integer age = readInt("Enter age:", "Error: Not a number. Back to main menu\n");
-        if (age == null) return;
+        System.out.println("Enter age:");
 
-        User user = new User(name, email, age);
-        List<String> errors = validateUser(user);
-        if (!errors.isEmpty()) {
-            errors.forEach(System.out::println);
-            System.out.println("Try again");
+        logger.debug("Parsing age");
+
+        Integer age = readInt();
+
+        if (age == null) {
+            logger.info("User was not created");
             return;
         }
 
-        userDAO.create(user);
+        logger.debug("name={}, email={}, age={}", name, email, age);
+
+        User user = new User(name, email, age);
+
+        if (!isUserValid(user)){
+            logger.info("User was not created");
+            return;
+        }
+
+        logger.info("User was created");
+
+        userDAO.save(user);
     }
 
     private static void readUser() {
-        Integer id = readInt("Enter user id:", "Error: Not a number. Back to main menu\n");
-        if (id == null) return;
+        logger.info("Reading user");
+
+        System.out.println("Enter id: ");
+
+        logger.debug("Parsing id");
+
+        Integer id = readInt();
+
+        if (id == null || id <= 0) {
+            logger.info("Invalid user id");
+            return;
+        }
+
+        logger.debug("user id = {}", id);
 
         Optional<User> user = userDAO.read(id);
+        if (user.isPresent()) {
+            logger.info("User was found");
+            System.out.println(user.get());
+        } else {
+            logger.info("User was not found");
+        }
+    }
 
-        System.out.println(user.isEmpty() ? "Error: User not found" : user.get());
+    private static void readAllUsers() {
+        logger.info("Reading all users");
+
+        userDAO.readAll().forEach(System.out::println);
     }
 
     private static void updateUser() {
-        Integer id = readInt("Enter user id:", "Error: Not a number. Back to main menu\n");
-        if (id == null) return;
+        logger.info("Updating user");
+
+        System.out.println("Enter id: ");
+
+        logger.debug("Parsing id");
+
+        Integer id = readInt();
+
+        if (id == null || id <= 0) {
+            logger.info("Invalid user id");
+            return;
+        }
 
         User userToUpdate = userDAO.read(id).orElse(null);
         if (userToUpdate == null) {
-            System.out.println("Error: User not found");
+            logger.info("User to update was not found");
             return;
         }
 
@@ -102,74 +161,86 @@ public class App {
                     userToUpdate.setEmail(scanner.nextLine());
                 }
                 case "3" -> {
-                    Integer age = readInt("Enter age:", "Error: Not a number\n");
+                    System.out.println("Enter new age");
+                    Integer age = readInt();
                     if (age == null) continue;
                     userToUpdate.setAge(age);
                 }
                 case "4" -> isSave = true;
-                default -> System.out.println("Error: Unsupported command");
+                default -> logger.warn("Unsupported command");
             }
         }
-
-        List<String> errors = validateUser(userToUpdate);
-
-        if (!errors.isEmpty()) {
-            errors.forEach(System.out::println);
-            System.out.println("Try again");
+        logger.debug("\nFields state to update: {}", userToUpdate);
+        if (!isUserValid(userToUpdate)){
+            logger.info("User can't be updated with invalid data");
             return;
         }
 
-        userDAO.update(userToUpdate);
 
+        userDAO.update(userToUpdate);
     }
 
     private static void deleteUser() {
-        Integer id = readInt("Enter user id:", "Error: Not a number. Back to main menu\n");
-        if (id == null) return;
+        logger.info("Deleting user");
+
+        System.out.println("Enter id: ");
+
+        logger.debug("Parsing id");
+
+        Integer id = readInt();
+
+        if (id == null || id <= 0) {
+            logger.info("Invalid user id");
+            return;
+        }
 
         Optional<User> user = userDAO.read(id);
 
         if (user.isEmpty()) {
-            System.out.println("Error: User not found");
+            logger.info("User not found");
         } else {
             userDAO.delete(id);
         }
     }
 
-    private static List<String> validateUser(User user) {
-        ArrayList<String> errors = new ArrayList<>();
+    private static boolean isUserValid(User user) {
+        boolean isValid = true;
 
         int nameLength = user.getName().length();
         if (nameLength > 100 || nameLength == 0) {
-            errors.add("Error: Name length should be between 1 and 100 characters");
+            logger.warn("Name length should be between 1 and 100 characters");
+            isValid = false;
         }
 
         int emailLength = user.getEmail().length();
         if (emailLength > 100 || emailLength == 0) {
-            errors.add("Error: Email length should be between 1 and 100 characters");
+            logger.warn("Email length should be between 1 and 100 characters");
+            isValid = false;
         }
 
-        if (userDAO.read(user.getEmail()).isPresent()) {
-            errors.add("Error: This email is already taken");
+        Optional<User> userCheck = userDAO.read(user.getEmail());
+        if ((userCheck.isPresent()) && (userCheck.get().getId() != user.getId())) {
+            logger.warn("This email is already taken");
+            isValid = false;
         }
 
         int userAge = user.getAge();
         if (userAge < 0 || userAge > 120) {
-            errors.add("Error: Age should be in range of 0 and 120 years");
+            logger.warn("Age should be in range of 0 and 120 years");
+            isValid = false;
         }
-
-        return errors;
+        return isValid;
     }
 
-    private static Integer readInt(String msg, String errMsg) {
-        System.out.println(msg);
-
-        String input = scanner.nextLine();
-
+    private static Integer readInt() {
         try {
-            return Integer.parseInt(input);
+            String line = scanner.nextLine();
+
+            logger.debug("Line to parse as int: {}", line);
+
+            return Integer.parseInt(line);
         } catch (NumberFormatException e) {
-            System.out.println(errMsg);
+            logger.error("Line does not contain int. {}", Arrays.toString(e.getStackTrace()));
             return null;
         }
     }
