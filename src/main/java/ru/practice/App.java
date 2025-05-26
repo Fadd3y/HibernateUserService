@@ -170,7 +170,7 @@ public class App {
                 default -> logger.warn("Unsupported command");
             }
         }
-        logger.debug("\nFields state to update: {}", userToUpdate);
+        logger.debug("Fields state to update: {}", userToUpdate);
         if (!isUserValid(userToUpdate)){
             logger.info("User can't be updated with invalid data");
             return;

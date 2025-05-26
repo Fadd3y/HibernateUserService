@@ -92,8 +92,6 @@ public class UserDAO {
         userToBeUpdated.setEmail(user.getEmail());
         userToBeUpdated.setAge(user.getAge());
 
-        session.persist(userToBeUpdated);
-
         session.getTransaction().commit();
         logger.info("User was successfully updated");
     }
