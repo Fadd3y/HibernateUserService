@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.practice.dao.UserDAO;
 import ru.practice.models.User;
+import ru.practice.sevices.UserService;
 
 import java.util.*;
 
@@ -14,8 +15,8 @@ import java.util.*;
  */
 public class App {
 
-    private static UserDAO userDAO;
     private static Scanner scanner;
+    private static UserService userService;
 
     private static final Logger logger = LoggerFactory.getLogger(App.class);
 
@@ -28,7 +29,7 @@ public class App {
         logger.info("User service started");
 
         try (SessionFactory sessionFactory = configuration.buildSessionFactory()) {
-            userDAO = new UserDAO(sessionFactory);
+            userService = new UserService(new UserDAO(sessionFactory));
 
             boolean isExit = false;
             String line;
@@ -70,9 +71,7 @@ public class App {
         String email = scanner.nextLine();
 
         System.out.println("Enter age:");
-
         logger.debug("Parsing age");
-
         Integer age = readInt();
 
         if (age == null) {
@@ -83,15 +82,11 @@ public class App {
         logger.debug("name={}, email={}, age={}", name, email, age);
 
         User user = new User(name, email, age);
-
-        if (!isUserValid(user)){
-            logger.info("User was not created");
-            return;
+        try {
+            userService.save(user);
+        } catch (Exception e) {
+            logger.error("User was not created: {}", e.getStackTrace());
         }
-
-        logger.info("User was created");
-
-        userDAO.save(user);
     }
 
     private static void readUser() {
@@ -110,7 +105,14 @@ public class App {
 
         logger.debug("user id = {}", id);
 
-        Optional<User> user = userDAO.read(id);
+        Optional<User> user = null;
+        try {
+            user = userService.read(id);
+        } catch (Exception e) {
+            logger.error("User was not read: {}", e.getStackTrace());
+            return;
+        }
+
         if (user.isPresent()) {
             logger.info("User was found");
             System.out.println(user.get());
@@ -122,7 +124,19 @@ public class App {
     private static void readAllUsers() {
         logger.info("Reading all users");
 
-        userDAO.readAll().forEach(System.out::println);
+        List<User> users = null;
+        try {
+            users = userService.readAll();
+        } catch (Exception e) {
+            logger.error("Users was not read: {}", e.getStackTrace());
+            return;
+        }
+
+        if (users.isEmpty()) {
+            logger.info("There is no users in database");
+        } else {
+            users.forEach(System.out::println);
+        }
     }
 
     private static void updateUser() {
@@ -139,7 +153,14 @@ public class App {
             return;
         }
 
-        User userToUpdate = userDAO.read(id).orElse(null);
+        User userToUpdate = null;
+        try {
+            userToUpdate = userService.read(id).orElse(null);
+        } catch (Exception e) {
+            logger.error("User was not checked for existence: {}", e.getStackTrace());
+            return;
+        }
+
         if (userToUpdate == null) {
             logger.info("User to update was not found");
             return;
@@ -171,13 +192,12 @@ public class App {
             }
         }
         logger.debug("Fields state to update: {}", userToUpdate);
-        if (!isUserValid(userToUpdate)){
-            logger.info("User can't be updated with invalid data");
-            return;
+
+        try {
+            userService.update(userToUpdate);
+        } catch (Exception e) {
+            logger.error("User was not updated: {}", e.getStackTrace());
         }
-
-
-        userDAO.update(userToUpdate);
     }
 
     private static void deleteUser() {
@@ -188,48 +208,16 @@ public class App {
         logger.debug("Parsing id");
 
         Integer id = readInt();
-
         if (id == null || id <= 0) {
             logger.info("Invalid user id");
             return;
         }
 
-        Optional<User> user = userDAO.read(id);
-
-        if (user.isEmpty()) {
-            logger.info("User not found");
-        } else {
-            userDAO.delete(id);
+        try {
+            userService.delete(id);
+        } catch (Exception e) {
+            logger.error("User was not deleted: {}", e.getStackTrace());
         }
-    }
-
-    private static boolean isUserValid(User user) {
-        boolean isValid = true;
-
-        int nameLength = user.getName().length();
-        if (nameLength > 100 || nameLength == 0) {
-            logger.warn("Name length should be between 1 and 100 characters");
-            isValid = false;
-        }
-
-        int emailLength = user.getEmail().length();
-        if (emailLength > 100 || emailLength == 0) {
-            logger.warn("Email length should be between 1 and 100 characters");
-            isValid = false;
-        }
-
-        Optional<User> userCheck = userDAO.read(user.getEmail());
-        if ((userCheck.isPresent()) && (userCheck.get().getId() != user.getId())) {
-            logger.warn("This email is already taken");
-            isValid = false;
-        }
-
-        int userAge = user.getAge();
-        if (userAge < 0 || userAge > 120) {
-            logger.warn("Age should be in range of 0 and 120 years");
-            isValid = false;
-        }
-        return isValid;
     }
 
     private static Integer readInt() {

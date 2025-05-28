@@ -88,9 +88,10 @@ public class UserDAO {
             criteriaQuery.select(root).where(builder.equal(root.get("email"), email));
             List<User> users = session.createQuery(criteriaQuery).getResultList();
 
-            logger.debug("Found user: {}", users.get(0));
+            User user = users.isEmpty() ? null : users.get(0);
+            logger.debug("Found user: {}", user);
             logger.info("Reading user by email operation is successful");
-            return Optional.ofNullable(users.isEmpty() ? null : users.get(0));
+            return Optional.ofNullable(user);
         } catch (Exception e) {
             logger.error("Error while reading user by email");
             throw e;
