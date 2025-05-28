@@ -1,10 +1,12 @@
 package ru.practice.dao;
 
+import jakarta.persistence.Query;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.practice.models.User;
@@ -22,88 +24,121 @@ public class UserDAO {
     }
 
     public void save(User user) {
-        logger.info("Saving user to DB");
+        Transaction transaction = null;
 
-        Session session = sessionFactory.getCurrentSession();
-        session.beginTransaction();
+        try(Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
 
-        session.persist(user);
+            session.persist(user);
 
-        session.getTransaction().commit();
-
-        logger.info("User was saved to DB");
+            transaction.commit();
+            logger.info("User was saved to DB");
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Error while saving user");
+            throw e;
+        }
     }
 
     public List<User> readAll() {
-        logger.info("Getting all users from DB");
-        Session session = sessionFactory.getCurrentSession();
-        session.beginTransaction();
+        logger.info("Reading all users operation");
 
-        CriteriaBuilder builder = session.getCriteriaBuilder();
-        CriteriaQuery<User> all = builder.createQuery(User.class);
-        Root<User> root = all.from(User.class);
-        all.select(root);
+        try (Session session = sessionFactory.openSession()) {
+            CriteriaBuilder builder = session.getCriteriaBuilder();
+            CriteriaQuery<User> all = builder.createQuery(User.class);
+            Root<User> root = all.from(User.class);
+            all.select(root);
 
-        List<User> users = session.createQuery(all).getResultList();
+            List<User> users = session.createQuery(all).getResultList();
 
-        logger.debug("Found users: {}", users);
-
-        session.getTransaction().commit();
-
-        logger.info("Users were found");
-        return users;
+            logger.info("Reading all users operation is successful");
+            logger.debug("Found users: {}", users);
+            return users;
+        } catch (Exception e) {
+            logger.error("Error while reading all users");
+            throw e;
+        }
     }
 
-    public Optional<User> read(int id) {
-        Session session = sessionFactory.getCurrentSession();
-        session.beginTransaction();
+    public Optional<User> readById(int id) {
+        logger.info("Reading user by id operation");
+        logger.debug("Searching user in DB, id = {}", id);
 
-        User user = session.find(User.class, id);
-
-        logger.info("Searching user in DB, id = {}", id);
-
-        session.getTransaction().commit();
-
-        return Optional.ofNullable(user);
+        try(Session session = sessionFactory.openSession()) {
+            User user = session.find(User.class, id);
+            logger.debug("Found user: {}", user);
+            logger.info("Reading user by id operation is successful");
+            return Optional.ofNullable(user);
+        } catch (Exception e) {
+            logger.error("Error while reading user by id");
+            throw e;
+        }
     }
 
-    public Optional<User> read(String email) {
-        Session session = sessionFactory.getCurrentSession();
-        session.beginTransaction();
+    public Optional<User> readByEmail(String email) {
+        logger.info("Reading user by email operation");
+        logger.debug("Searching user in DB, email = {}", email);
 
-        CriteriaBuilder builder = session.getCriteriaBuilder();
-        CriteriaQuery<User> criteriaQuery = builder.createQuery(User.class);
-        Root<User> root = criteriaQuery.from(User.class);
-        criteriaQuery.select(root).where(builder.equal(root.get("email"), email));
-        List<User> users = session.createQuery(criteriaQuery).getResultList();
+        try(Session session = sessionFactory.openSession()) {
+            CriteriaBuilder builder = session.getCriteriaBuilder();
+            CriteriaQuery<User> criteriaQuery = builder.createQuery(User.class);
+            Root<User> root = criteriaQuery.from(User.class);
+            criteriaQuery.select(root).where(builder.equal(root.get("email"), email));
+            List<User> users = session.createQuery(criteriaQuery).getResultList();
 
-        session.getTransaction().commit();
-
-        return Optional.ofNullable(users.isEmpty() ? null : users.get(0));
+            logger.debug("Found user: {}", users.get(0));
+            logger.info("Reading user by email operation is successful");
+            return Optional.ofNullable(users.isEmpty() ? null : users.get(0));
+        } catch (Exception e) {
+            logger.error("Error while reading user by email");
+            throw e;
+        }
     }
 
     public void update(User user) {
-        logger.info("Updating user");
-        Session session = sessionFactory.getCurrentSession();
-        session.beginTransaction();
+        logger.info("Updating user operation");
 
-        User userToBeUpdated = session.find(User.class, user.getId());
-        userToBeUpdated.setName(user.getName());
-        userToBeUpdated.setEmail(user.getEmail());
-        userToBeUpdated.setAge(user.getAge());
+        Transaction transaction = null;
 
-        session.getTransaction().commit();
-        logger.info("User was successfully updated");
+        try(Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+
+            User userToBeUpdated = session.find(User.class, user.getId());
+            userToBeUpdated.setName(user.getName());
+            userToBeUpdated.setEmail(user.getEmail());
+            userToBeUpdated.setAge(user.getAge());
+
+            transaction.commit();
+            logger.info("User was successfully updated");
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Error while updating user");
+            throw e;
+        }
     }
 
     public void delete(int id) {
-        logger.info("Deleting user");
-        Session session = sessionFactory.getCurrentSession();
-        session.beginTransaction();
+        logger.info("Deleting user operation");
 
-        session.remove(session.find(User.class, id));
+        Transaction transaction = null;
 
-        session.getTransaction().commit();
-        logger.info("User was successfully deleted");
+        try(Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+
+            session.remove(session.find(User.class, id));
+
+            transaction.commit();
+            logger.info("User was successfully deleted");
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            logger.error("Error while updating user");
+            throw e;
+        }
     }
 }
