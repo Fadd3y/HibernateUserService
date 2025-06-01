@@ -26,6 +26,10 @@ public class User {
     @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdAt;
 
+    {
+        createdAt = LocalDateTime.now();
+    }
+
     public User() {
     }
 
@@ -33,7 +37,13 @@ public class User {
         this.name = name;
         this.email = email;
         this.age = age;
-        createdAt = LocalDateTime.now();
+    }
+
+    public User(int id, String name, String email, int age) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.age = age;
     }
 
     public String getName() {
@@ -74,6 +84,24 @@ public class User {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        User user = (User) o;
+        return id == user.id && age == user.age && name.equals(user.name) && email.equals(user.email) && createdAt.equals(user.createdAt);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + name.hashCode();
+        result = 31 * result + email.hashCode();
+        result = 31 * result + age;
+        result = 31 * result + createdAt.hashCode();
+        return result;
     }
 
     @Override

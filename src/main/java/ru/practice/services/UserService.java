@@ -1,4 +1,4 @@
-package ru.practice.sevices;
+package ru.practice.services;
 
 import org.slf4j.LoggerFactory;
 import ru.practice.dao.UserDAO;
@@ -38,6 +38,11 @@ public class UserService {
     }
 
     public void update(User user) {
+        if (userDAO.readById(user.getId()).isEmpty()) {
+            logger.info("User not exist");
+            return;
+        }
+
         if (!isUserValid(user)) {
             logger.info("User can't be updated with invalid data");
             return;

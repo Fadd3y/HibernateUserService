@@ -19,8 +19,9 @@
 
     <logger name="ru.practice.App" level="DEBUG"/>
     <logger name="ru.practice.dao.UserDAO" level="DEBUG"/>
+    <logger name="ru.practice.services.UserService" level="DEBUG"/>
 
-    <root level="info">
+    <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </root>

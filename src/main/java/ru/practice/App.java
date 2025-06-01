@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.practice.dao.UserDAO;
 import ru.practice.models.User;
-import ru.practice.sevices.UserService;
+import ru.practice.services.UserService;
 
 import java.util.*;
 
