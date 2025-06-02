@@ -22,11 +22,17 @@ public class UserDAO {
     public UserDAO(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
     }
-
+    // транзакции бы вынести в сервис слой, но тогда тесты надо переписывать....
     public void save(User user) {
+        if (user == null) {
+            throw new NullPointerException("User cant be null");
+        }
+
+        Session session = null;
         Transaction transaction = null;
 
-        try(Session session = sessionFactory.openSession()) {
+        try {
+            session = sessionFactory.openSession();
             transaction = session.beginTransaction();
 
             session.persist(user);
@@ -34,11 +40,15 @@ public class UserDAO {
             transaction.commit();
             logger.info("User was saved to DB");
         } catch (Exception e) {
-            if (transaction != null) {
+            if (transaction != null && transaction.getStatus().isActive()) {
                 transaction.rollback();
             }
             logger.error("Error while saving user");
             throw e;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
         }
     }
 
@@ -101,9 +111,11 @@ public class UserDAO {
     public void update(User user) {
         logger.info("Updating user operation");
 
+        Session session = null;
         Transaction transaction = null;
 
-        try(Session session = sessionFactory.openSession()) {
+        try {
+            session = sessionFactory.getCurrentSession();
             transaction = session.beginTransaction();
 
             User userToBeUpdated = session.find(User.class, user.getId());
@@ -119,15 +131,21 @@ public class UserDAO {
             }
             logger.error("Error while updating user");
             throw e;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
         }
     }
 
     public void delete(int id) {
         logger.info("Deleting user operation");
 
+        Session session = null;
         Transaction transaction = null;
 
-        try(Session session = sessionFactory.openSession()) {
+        try {
+            session = sessionFactory.getCurrentSession();
             transaction = session.beginTransaction();
 
             session.remove(session.find(User.class, id));
@@ -140,6 +158,10 @@ public class UserDAO {
             }
             logger.error("Error while updating user");
             throw e;
+        } finally {
+            if (session != null) {
+                session.close();
+            }
         }
     }
 }
