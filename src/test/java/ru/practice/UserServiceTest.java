@@ -16,7 +16,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-import static junit.framework.Assert.*;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)

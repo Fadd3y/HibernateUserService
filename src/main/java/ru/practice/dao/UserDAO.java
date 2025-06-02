@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import ru.practice.models.User;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 public class UserDAO {
@@ -91,6 +92,10 @@ public class UserDAO {
         logger.info("Reading user by email operation");
         logger.debug("Searching user in DB, email = {}", email);
 
+        if (email == null) {
+            throw new NullPointerException("Email cant be null");
+        }
+
         try(Session session = sessionFactory.openSession()) {
             CriteriaBuilder builder = session.getCriteriaBuilder();
             CriteriaQuery<User> criteriaQuery = builder.createQuery(User.class);
@@ -111,6 +116,10 @@ public class UserDAO {
     public void update(User user) {
         logger.info("Updating user operation");
 
+        if (user == null) {
+            throw new NullPointerException("User cant be null");
+        }
+
         Session session = null;
         Transaction transaction = null;
 
@@ -119,6 +128,9 @@ public class UserDAO {
             transaction = session.beginTransaction();
 
             User userToBeUpdated = session.find(User.class, user.getId());
+
+            if (userToBeUpdated == null) throw new NoSuchElementException();
+
             userToBeUpdated.setName(user.getName());
             userToBeUpdated.setEmail(user.getEmail());
             userToBeUpdated.setAge(user.getAge());
