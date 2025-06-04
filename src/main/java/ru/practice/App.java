@@ -13,10 +13,11 @@ import java.util.*;
 
 public class App {
 
+    private static final Logger logger = LoggerFactory.getLogger(App.class);
+
     private static Scanner scanner;
     private static UserService userService;
 
-    private static final Logger logger = LoggerFactory.getLogger(App.class);
 
     public static void main(String[] args) {
         scanner = new Scanner(System.in);

@@ -183,17 +183,11 @@ public class UserServiceImplTest {
     private static Stream<Arguments> provideInvalidFieldForObjectUser() {
         return Stream.of(
                 Arguments.of(1, "", "test1@ya.ru", 12),
-                Arguments.of(1, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
-                        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
-                        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "test1@ya.ru", 12),
                 Arguments.of(2, "test2", "test2@ya.ru", 28),
                 Arguments.of(1, "", "test1@ya.ru", -3),
                 Arguments.of(1, "", "test1@ya.ru", 130),
                 Arguments.of(1, "", "test1@ya.ru", 0),
-                Arguments.of(1, "test", "", 3),
-                Arguments.of(1, "test", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
-                        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" +
-                        "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 3)
+                Arguments.of(1, "test", "", 3)
         );
     }
 

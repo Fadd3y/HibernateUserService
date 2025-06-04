@@ -67,16 +67,16 @@ public class UserServiceImpl implements UserService {
         StringBuilder builder = new StringBuilder();
 
         int nameLength = user.getName().length();
-        if (nameLength > 100 || nameLength == 0) {
-            logger.warn("Name length should be between 1 and 100 characters");
-            builder.append("Name length should be between 1 and 100 characters. ");
+        if (nameLength > 256 || nameLength == 0) {
+            logger.warn("Name length should be between 1 and 256 characters");
+            builder.append("Name length should be between 1 and 256 characters. ");
             isValid = false;
         }
 
         int emailLength = user.getEmail().length();
-        if (emailLength > 100 || emailLength == 0) {
-            logger.warn("Email length should be between 1 and 100 characters");
-            builder.append("Email length should be between 1 and 100 characters. ");
+        if (emailLength > 256 || emailLength == 0) {
+            logger.warn("Email length should be between 1 and 256 characters");
+            builder.append("Email length should be between 1 and 256 characters. ");
             isValid = false;
         }
 
