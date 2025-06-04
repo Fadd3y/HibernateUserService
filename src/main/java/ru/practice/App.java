@@ -73,7 +73,7 @@ public class App {
         Integer age = readInt();
 
         if (age == null) {
-            logger.info("User was not created: Invalid age");
+            logger.error("User was not created: Invalid age");
             return;
         }
 
@@ -97,7 +97,7 @@ public class App {
         Integer id = readInt();
 
         if (id == null || id <= 0) {
-            logger.info("Invalid user id");
+            logger.error("Invalid user id");
             return;
         }
 
@@ -132,6 +132,7 @@ public class App {
 
         if (users.isEmpty()) {
             logger.info("There is no users in database");
+            System.out.println("There is no users in database");
         } else {
             users.forEach(System.out::println);
         }
@@ -207,7 +208,7 @@ public class App {
 
         Integer id = readInt();
         if (id == null || id <= 0) {
-            logger.info("Invalid user id");
+            logger.error("Invalid user id");
             return;
         }
 
