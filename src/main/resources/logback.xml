@@ -18,8 +18,8 @@
     </appender>
 
     <logger name="ru.practice.App" level="DEBUG"/>
-    <logger name="ru.practice.dao.UserDAO" level="DEBUG"/>
-    <logger name="ru.practice.services.UserService" level="DEBUG"/>
+    <logger name="ru.practice.dao.UserDAOImpl" level="DEBUG"/>
+    <logger name="ru.practice.services.UserServiceImpl" level="DEBUG"/>
 
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>

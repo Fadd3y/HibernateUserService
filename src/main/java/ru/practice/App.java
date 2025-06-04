@@ -4,15 +4,13 @@ import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.practice.dao.UserDAO;
+import ru.practice.dao.UserDAOImpl;
 import ru.practice.models.User;
 import ru.practice.services.UserService;
+import ru.practice.services.UserServiceImpl;
 
 import java.util.*;
 
-/**
- * Hello world!
- */
 public class App {
 
     private static Scanner scanner;
@@ -29,7 +27,7 @@ public class App {
         logger.info("User service started");
 
         try (SessionFactory sessionFactory = configuration.buildSessionFactory()) {
-            userService = new UserService(new UserDAO(sessionFactory));
+            userService = new UserServiceImpl(new UserDAOImpl(sessionFactory));
 
             boolean isExit = false;
             String line;
@@ -75,7 +73,7 @@ public class App {
         Integer age = readInt();
 
         if (age == null) {
-            logger.info("User was not created");
+            logger.info("User was not created: Invalid age");
             return;
         }
 
@@ -85,7 +83,7 @@ public class App {
         try {
             userService.save(user);
         } catch (Exception e) {
-            logger.error("User was not created: {}", e.getStackTrace());
+            logger.error("User was not created: {}", e.getMessage());
         }
     }
 
@@ -196,7 +194,7 @@ public class App {
         try {
             userService.update(userToUpdate);
         } catch (Exception e) {
-            logger.error("User was not updated: {}", e.getStackTrace());
+            logger.error("User was not updated: {}", e.getMessage());
         }
     }
 

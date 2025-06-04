@@ -11,10 +11,9 @@ import org.junit.jupiter.api.*;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import ru.practice.dao.UserDAO;
+import ru.practice.dao.UserDAOImpl;
 import ru.practice.models.User;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -22,9 +21,8 @@ import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Testcontainers
-public class UserDAOTest {
+public class UserDAOImplTest {
 
     @Container
     private static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15")
@@ -33,10 +31,10 @@ public class UserDAOTest {
             .withPassword("test");
 
     private static SessionFactory sessionFactory;
-    private static UserDAO userDAO;
+    private static UserDAOImpl userDAOImpl;
 
     @BeforeAll
-    static void initHibernate() throws SQLException {
+    static void initHibernate() {
         Configuration configuration = new Configuration()
                 .addAnnotatedClass(User.class);
 
@@ -79,7 +77,7 @@ public class UserDAOTest {
 
     @BeforeEach
     void initDAO() {
-        userDAO = new UserDAO(sessionFactory);
+        userDAOImpl = new UserDAOImpl(sessionFactory);
     }
 
     @BeforeEach
@@ -121,21 +119,22 @@ public class UserDAOTest {
         int age = 89;
         User user = new User(name, email, age);
 
-        userDAO.save(user);
-        Optional<User> result = userDAO.readByEmail(email);
+        User savedUser = userDAOImpl.save(user);
+        Optional<User> result = userDAOImpl.readByEmail(email);
 
         assertTrue(result.isPresent());
         assertNotEquals(0, result.get().getId());
         assertEquals(name, result.get().getName());
         assertEquals(email, result.get().getEmail());
         assertEquals(age, result.get().getAge());
+        assertEquals(savedUser, user);
     }
 
     @Test
     public void testSave_whenNull() {
         User user = null;
 
-        Exception exception = assertThrows(NullPointerException.class, () -> userDAO.save(user));
+        Exception exception = assertThrows(NullPointerException.class, () -> userDAOImpl.save(user));
         assertEquals("User cant be null", exception.getMessage());
     }
 
@@ -146,8 +145,9 @@ public class UserDAOTest {
         int age = 89;
         User user = new User(name, email, age);
 
-        userDAO.save(user);
-        assertThrows(EntityExistsException.class, () -> userDAO.save(user));
+        userDAOImpl.save(user);
+
+        assertThrows(EntityExistsException.class, () -> userDAOImpl.save(user));
     }
 
     @Test
@@ -157,7 +157,7 @@ public class UserDAOTest {
         int age = 281;
         User user = new User(name, email, age);
 
-        assertThrows(ConstraintViolationException.class, () -> userDAO.save(user));
+        assertThrows(ConstraintViolationException.class, () -> userDAOImpl.save(user));
     }
 
     @Test
@@ -168,7 +168,7 @@ public class UserDAOTest {
         int age = 28;
         User user = new User(name, email, age);
 
-        assertThrows(DataException.class, () -> userDAO.save(user));
+        assertThrows(DataException.class, () -> userDAOImpl.save(user));
     }
 
     @Test
@@ -177,9 +177,9 @@ public class UserDAOTest {
         User user2 = new User("name1", "email1", 54);
         List<User> users = List.of(user1, user2);
 
-        userDAO.save(user1);
-        userDAO.save(user2);
-        List<User> result = userDAO.readAll();
+        userDAOImpl.save(user1);
+        userDAOImpl.save(user2);
+        List<User> result = userDAOImpl.readAll();
 
         assertEquals(2, users.size());
         assertEquals(users, result);
@@ -189,7 +189,7 @@ public class UserDAOTest {
     public void testReadAll_whenNoUsersInDB() {
         List<User> empty = List.of();
 
-        List<User> result = userDAO.readAll();
+        List<User> result = userDAOImpl.readAll();
 
         assertTrue(result.isEmpty());
         assertEquals(empty, result);
@@ -199,9 +199,9 @@ public class UserDAOTest {
     public void testReadById_whenOk() {
         User user1 = new User("name", "email", 56);
 
-        userDAO.save(user1);
-        Optional<User> expected = userDAO.readByEmail("email");
-        Optional<User> result = userDAO.readById(expected.get().getId());
+        userDAOImpl.save(user1);
+        Optional<User> expected = userDAOImpl.readByEmail("email");
+        Optional<User> result = userDAOImpl.readById(expected.get().getId());
 
         assertNotNull(result);
         assertTrue(result.isPresent());
@@ -211,7 +211,7 @@ public class UserDAOTest {
     @Test
     public void testReadById_UserWithThisIdIsNotExist() {
 
-        Optional<User> result = userDAO.readById(1);
+        Optional<User> result = userDAOImpl.readById(1);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -222,8 +222,8 @@ public class UserDAOTest {
         String email = "email";
         User user1 = new User("name", email, 56);
 
-        userDAO.save(user1);
-        Optional<User> result = userDAO.readByEmail(email);
+        userDAOImpl.save(user1);
+        Optional<User> result = userDAOImpl.readByEmail(email);
 
         assertNotNull(result);
         assertTrue(result.isPresent());
@@ -234,7 +234,7 @@ public class UserDAOTest {
     public void testReadByEmail_whenEmailIsNull() {
         String email = null;
 
-        assertThrows(NullPointerException.class, () -> userDAO.readByEmail(email));
+        assertThrows(NullPointerException.class, () -> userDAOImpl.readByEmail(email));
     }
 
     @Test
@@ -244,29 +244,48 @@ public class UserDAOTest {
         String newEmail = "email new";
         int newAge = 79;
 
-        userDAO.save(user);
-        User userToBeUpdated = userDAO.readByEmail("email1").get();
+        userDAOImpl.save(user);
+        User userToBeUpdated = userDAOImpl.readByEmail("email1").get();
         userToBeUpdated.setName(newName);
         userToBeUpdated.setEmail(newEmail);
         userToBeUpdated.setAge(newAge);
-        userDAO.update(userToBeUpdated);
-        Optional<User> result = userDAO.readById(userToBeUpdated.getId());
+        User updatedUser = userDAOImpl.update(userToBeUpdated);
+        Optional<User> result = userDAOImpl.readById(userToBeUpdated.getId());
 
         assertNotNull(result);
         assertEquals(userToBeUpdated, result.get());
+        assertEquals(userToBeUpdated, updatedUser);
     }
 
     @Test
     public void testUpdate_whenUserIsNull() {
         User user = null;
 
-        assertThrows(NullPointerException.class, () -> userDAO.update(user));
+        assertThrows(NullPointerException.class, () -> userDAOImpl.update(user));
     }
 
     @Test
     public void testUpdate_whenUserDoesNotExist() {
         User user = new User("name1", "email1", 78);
 
-        assertThrows(NoSuchElementException.class, () -> userDAO.update(user));
+        assertThrows(NoSuchElementException.class, () -> userDAOImpl.update(user));
+    }
+
+    @Test
+    public void testDelete_whenOk() {
+        User user = new User("sss", "dd@dfb.com", 61);
+        userDAOImpl.save(user);
+        User userToBeDeleted = userDAOImpl.readByEmail("dd@dfb.com").get();
+
+        userDAOImpl.delete(userToBeDeleted.getId());
+        Optional<User> deletedUser = userDAOImpl.readById(userToBeDeleted.getId());
+
+        assertNotNull(deletedUser);
+        assertTrue(deletedUser.isEmpty());
+    }
+
+    @Test
+    public void testDelete_whenNoSuchUser() {
+        assertThrows(IllegalArgumentException.class, () -> userDAOImpl.delete(0));
     }
 }

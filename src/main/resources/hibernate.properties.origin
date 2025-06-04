@@ -3,4 +3,5 @@ hibernate.connection.url=
 hibernate.connection.username=
 hibernate.connection.password=
 
+hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 hibernate.current_session_context_class=thread
